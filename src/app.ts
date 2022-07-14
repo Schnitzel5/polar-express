@@ -6,9 +6,9 @@ import { Routes } from 'discord-api-types/v9';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { REST } from '@discordjs/rest';
 import { Command } from './commands/template';
-import * as express from 'express';
+import express from 'express';
 
-const app: express.Express = express();
+let app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 dotenv.config();
