@@ -1,5 +1,5 @@
 import { EmbedBuilder } from "@discordjs/builders";
-import { BaseCommandInteraction, CacheType, CommandInteractionOptionResolver } from "discord.js";
+import { BaseCommandInteraction, CacheType } from "discord.js";
 import build, { Command } from "./template";
 
 export interface BoardData {
@@ -16,7 +16,7 @@ export const data: Command = {
     command: build('board', 'Gives you a pong!', [
         { name: 'f2p', description: 'F2P/light spender category?', type: "Boolean", required: true }
     ]),
-    execute: async function execute(interaction: BaseCommandInteraction<CacheType>) {
+    execute: async (interaction: BaseCommandInteraction<CacheType>) => {
         let boardData: BoardData[] = generateRandomBoardData();
         let options: any = interaction.options;
         let ftwopCat: boolean = options.getBoolean('f2p');

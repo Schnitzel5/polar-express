@@ -33,8 +33,13 @@ client.connect(err => {
     console.log("MONGODB READY");
 });
 
-for (const file of commandFiles) {
-    if (file.includes("template")) {
+let count = 0;
+const rest = new REST({ version: '9' }).setToken(process.env.BOTTOKEN == undefined ? "" : process.env.BOTTOKEN);
+console.log('Started refreshing application (/) commands.');
+for (let file of commandFiles) {
+    count++;
+    console.log("CMDs: " + commandsToPush.length + " Count: " + count);
+    if (file.includes("template.ts")) {
         continue;
     }
     const command = import(`./commands/${file}`);
@@ -42,26 +47,25 @@ for (const file of commandFiles) {
     command.then(val => {
         console.log(`CMD: ${command} - File: ${file}`);
         console.log("Command data:");
-        console.log(val.data);
         if (val != undefined && val.data != undefined && val.data.command != undefined) {
+            console.log("CMD NAME: " + val.data.command.name);
             commands.set(val.data.command.name, val.data);
             commandsToPush.push(val.data.command);
         }
     }).finally(() => {
-        const rest = new REST({ version: '9' }).setToken(process.env.BOTTOKEN == undefined ? "" : process.env.BOTTOKEN);
+        if (count < commandFiles.length) {
+            return;
+        }
         (async () => {
             try {
-                console.log('Started refreshing application (/) commands.');
-
-                commandsToPush.forEach(console.log);
-
-                await rest.put(
+                /*await rest.put(
                     Routes.applicationCommands(clientID),
                     { body: commandsToPush.map(val => val.toJSON()) },
                 )
                     .finally(() => console.log('Refreshing completed.'))
-                    .catch(console.error);
+                    .catch(console.error);*/
 
+                console.log(commandsToPush.map(val => val.name));
                 console.log('Successfully reloaded application (/) commands.');
             } catch (error) {
                 console.error(error);
