@@ -6,7 +6,11 @@ import { Routes } from 'discord-api-types/v9';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { REST } from '@discordjs/rest';
 import { Command } from './commands/template';
+import * as express from 'express';
 
+const app: express.Express = express();
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 dotenv.config();
 const uri = `mongodb+srv://${process.env.MONGOUSER}:${process.env.MONGOPW}@noconnection.dpmpa.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -86,3 +90,11 @@ bot.on('interactionCreate', async interaction => {
 });
 
 bot.login(process.env.BOTTOKEN);
+
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'Nothing here to see!' });
+});
+
+app.listen(parseInt(process.env.PORT == undefined ? '8080' : process.env.PORT) || 8080, '0.0.0.0', () => {
+    console.log("API Server is running.");
+});
