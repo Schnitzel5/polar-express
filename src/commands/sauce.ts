@@ -3,6 +3,7 @@ import { BaseCommandInteraction, CacheType } from "discord.js";
 import build, { Command } from "./template";
 import * as cheerio from 'cheerio';
 import axios from "axios";
+import FormData from 'form-data';
 
 export const data: Command = {
     command: build('sauce', 'Give sauce!', [
@@ -10,6 +11,7 @@ export const data: Command = {
     ]),
     execute: async (interaction: BaseCommandInteraction<CacheType>) => {
         const sauceURL: string = 'https://saucenao.com/search.php';
+        let form: FormData = new FormData();
         let options: any = interaction.options;
         let url: string = options.getString('url');
         let embed: EmbedBuilder = new EmbedBuilder();
@@ -20,7 +22,9 @@ export const data: Command = {
             iconURL: 'https://cdn.discordapp.com/avatars/996034025842036816/8f53fdf39c01cbb3474ed0eb0cd094a2.webp?size=100',
             url: 'https://polarexpress-beta.web.app/welcome'
         });
-        axios.post(sauceURL, { file: '(binary)', url: url })
+        form.append('file', '(binary)');
+        form.append('url', url);
+        axios.post(sauceURL, form, { headers: form.getHeaders() })
             .then(async (res) => {
                 console.log('DEBUG');
                 if (res.status == 200) {
@@ -28,11 +32,15 @@ export const data: Command = {
                     const $ = cheerio.load(res.data);
                     console.log("TESTING res.data");
                     console.log(res.data);
+                    let count = 0;
                     $('.resulttable').each((index, element) => {
                         let resultLinks = $('.resultcontentcolumn', element).first();
                         console.log('ELEMENT');
                         console.log(element);
                         $('a', resultLinks).each((i, e) => {
+                            if (count > 24) {
+                                return;
+                            }
                             console.log('E');
                             console.log(e);
                             let linkText = $(e).text();
@@ -45,6 +53,7 @@ export const data: Command = {
                                 value: link,
                                 inline: false
                             });
+                            count++;
                         });
                     });
                 }
