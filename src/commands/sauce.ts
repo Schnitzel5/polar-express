@@ -26,23 +26,15 @@ export const data: Command = {
         form.append('url', url);
         axios.post(sauceURL, form, { headers: form.getHeaders() })
             .then(async (res) => {
-                console.log('DEBUG');
                 if (res.status == 200) {
-                    console.log('Status 200');
                     const $ = cheerio.load(res.data);
-                    console.log("TESTING res.data");
-                    console.log(res.data);
                     let count = 0;
                     $('.resulttable').each((index, element) => {
                         let resultLinks = $('.resultcontentcolumn', element).first();
-                        console.log('ELEMENT');
-                        console.log(element);
                         $('a', resultLinks).each((i, e) => {
                             if (count > 24) {
                                 return;
                             }
-                            console.log('E');
-                            console.log(e);
                             let linkText = $(e).text();
                             let link = $(e).attr('href');
                             if (link == undefined) {
