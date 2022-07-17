@@ -37,7 +37,7 @@ export const data: Command = {
             text: 'Fun Fact: Polar bear meat is yummy!',
             iconURL: 'https://cdn.discordapp.com/avatars/996034025842036816/8f53fdf39c01cbb3474ed0eb0cd094a2.webp?size=100'
         });
-        await interaction.reply({ embeds: [embed.toJSON()] });
+        await interaction.reply({ embeds: [embed.toJSON()] }); // integrate mongodb
     },
 };
 
