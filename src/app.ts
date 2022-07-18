@@ -12,7 +12,7 @@ let app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 dotenv.config();
-const uri = `mongodb+srv://${process.env.MONGOUSER}:${process.env.MONGOPW}@noconnection.dpmpa.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.MONGOUSER}:${process.env.MONGOPW}@${process.env.MONGOURL}/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     serverApi: ServerApiVersion.v1
 });
@@ -25,6 +25,16 @@ const clientID = '996034025842036816';
 
 client.connect(err => {
     const collection = client.db("test").collection("devices");
+    const boards = client.db('PolarExpressTM').collection("boards");
+    boards.find({}, {
+        projection: {
+            board: 'boardName'
+        }
+    }).toArray((err, data) => {
+        if (err) {
+            console.error("Leaderboard fetch failed: " + err.message);
+        }
+    });
     // perform actions on the collection object
     client.close();
     console.log("MONGODB READY");

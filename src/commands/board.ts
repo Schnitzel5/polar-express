@@ -13,22 +13,22 @@ export interface BoardData {
 }
 
 export const data: Command = {
-    command: build('board', 'Gives you a pong!', [
-        { name: 'f2p', description: 'F2P/light spender category?', type: "Boolean", required: true }
+    command: build('board', 'The good old rcord leaderboards!', [
+        { name: 'name', description: 'Name of the board', type: "String", required: true }
     ]),
     execute: async (interaction: BaseCommandInteraction<CacheType>) => {
         let boardData: BoardData[] = generateRandomBoardData();
         let options: any = interaction.options;
-        let ftwopCat: boolean = options.getBoolean('f2p');
+        let boardName: string = options.getString('name');
         let embed: EmbedBuilder = new EmbedBuilder();
         embed.setColor([56, 76, 84]);
-        embed.setTitle('Arly Funds Leaderboard');
+        embed.setTitle(boardName);
         embed.setAuthor({
             name: 'The Polar Express™',
             iconURL: 'https://cdn.discordapp.com/avatars/996034025842036816/8f53fdf39c01cbb3474ed0eb0cd094a2.webp?size=100',
             url: 'https://polarexpress-beta.web.app/welcome'
         });
-        embed.setDescription(ftwopCat ? 'F2P + light spender category' : 'Whale category');
+        embed.setDescription(boardName);
         embed.setThumbnail('https://cdn.discordapp.com/banners/992115669774635078/a_f3b461afc031173669ac827bcaa0edd0.webp?size=300');
         for (let board of boardData) {
             embed.addFields({ name: 'Name ' + board.member, value: 'Points ' + calculateTotalPoints(board), inline: false });
