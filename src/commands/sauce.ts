@@ -4,14 +4,15 @@ import build, { Command } from "./template";
 import * as cheerio from 'cheerio';
 import axios from "axios";
 import FormData from 'form-data';
+import { MongoClient } from "mongodb";
 
 const urlRegex: RegExp = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
 export const data: Command = {
     command: build('sauce', 'Give sauce!', [
-        { name: 'url', description: 'URL of the desired image', type: "String", required: true }
+        { name: 'url', description: 'URL of the desired image', type: "String", required: true, autoComplete: false }
     ]),
-    execute: async (interaction: BaseCommandInteraction<CacheType>) => {
+    execute: async (interaction: BaseCommandInteraction<CacheType>, client: MongoClient) => {
         const sauceURL: string = 'https://saucenao.com/search.php';
         let options: any = interaction.options;
         let url: string = options.getString('url');
@@ -19,6 +20,7 @@ export const data: Command = {
         form.append('file', '(binary)');
         form.append('url', url);
         let embeds: EmbedBuilder[] = [];
+        await interaction.reply('...');
         axios.post(sauceURL, form, { headers: form.getHeaders() })
             .then(async (res) => {
                 if (res.status == 200) {
@@ -75,7 +77,7 @@ export const data: Command = {
                         count++;
                     });
                 }
-                await interaction.reply({ embeds: embeds.map(e => e.toJSON()) });
+                await interaction.editReply({ embeds: embeds.map(e => e.toJSON()) });
             }).catch((err) => {
                 console.error(err);
             });

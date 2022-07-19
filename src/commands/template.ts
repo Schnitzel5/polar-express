@@ -1,9 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { BaseCommandInteraction, CacheType } from 'discord.js';
+import { MongoClient } from 'mongodb';
 
 export interface Command {
     command: SlashCommandBuilder;
-    execute: (interaction: BaseCommandInteraction<CacheType>) => void;
+    execute: (interaction: BaseCommandInteraction<CacheType>, client: MongoClient) => void;
 }
 
 export interface Option {
@@ -11,6 +12,7 @@ export interface Option {
     name: string;
     description: string;
     required: boolean;
+    autoComplete: boolean;
 }
 
 export default function build(name: string, description: string, options: Option[]) {
@@ -63,7 +65,7 @@ export default function build(name: string, description: string, options: Option
                 cmd.addStringOption(o =>
                     o.setName(option.name)
                         .setDescription(option.description)
-                        .setRequired(option.required));
+                        .setRequired(option.required).setAutocomplete(option.autoComplete));
                 break;
             case 'User':
                 cmd.addUserOption(o =>

@@ -1,8 +1,11 @@
 import { EmbedBuilder } from "@discordjs/builders";
 import { BaseCommandInteraction, CacheType } from "discord.js";
+import { MongoClient } from "mongodb";
+import { connectMongo } from "../app";
 import build, { Command } from "./template";
 
 export interface BoardData {
+    boardName: string;
     guild: string;
     member: string;
     genesis: number;
@@ -14,9 +17,9 @@ export interface BoardData {
 
 export const data: Command = {
     command: build('board', 'The good old rcord leaderboards!', [
-        { name: 'name', description: 'Name of the board', type: "String", required: true }
+        { name: 'name', description: 'Name of the board', type: "String", required: true, autoComplete: true }
     ]),
-    execute: async (interaction: BaseCommandInteraction<CacheType>) => {
+    execute: async (interaction: BaseCommandInteraction<CacheType>, client: MongoClient) => {
         let boardData: BoardData[] = generateRandomBoardData();
         let options: any = interaction.options;
         let boardName: string = options.getString('name');
@@ -30,9 +33,33 @@ export const data: Command = {
         });
         embed.setDescription(boardName);
         embed.setThumbnail('https://cdn.discordapp.com/banners/992115669774635078/a_f3b461afc031173669ac827bcaa0edd0.webp?size=300');
-        for (let board of boardData) {
-            embed.addFields({ name: 'Name ' + board.member, value: 'Points ' + calculateTotalPoints(board), inline: false });
-        }
+        connectMongo(client, () => {
+            const boards = client.db('PolarExpressTM').collection("boards");
+            boards.find({ 'Board': boardName }).toArray(async (err, data) => {
+                if (err) {
+                    console.error("Leaderboard fetch failed: " + err.message);
+                }
+                if (data == undefined) {
+                    await interaction.editReply('Failed to fetch leaderboard data.');
+                    return;
+                }
+                let boards: BoardData[] = data.map(doc => {
+                    return {
+                        boardName: doc.Board,
+                        guild: doc.Guild,
+                        member: doc.Member,
+                        genesis: doc.Genesis,
+                        monthly: doc.Monthly,
+                        primo: doc.Primogems,
+                        pity: doc.Pity,
+                        guaranteed: doc.Guaranteed
+                    };
+                });
+                for (let board of boards) {
+                    embed.addFields({ name: 'Name ' + board.member, value: 'Points ' + calculateTotalPoints(board), inline: false });
+                }
+            });
+        });
         embed.setFooter({
             text: 'Fun Fact: Polar bear meat is yummy!',
             iconURL: 'https://cdn.discordapp.com/avatars/996034025842036816/8f53fdf39c01cbb3474ed0eb0cd094a2.webp?size=100'
@@ -45,6 +72,7 @@ function generateRandomBoardData(): BoardData[] {
     let boardData: BoardData[] = [];
     for (let i = 0; i < 20; i++) {
         boardData.push({
+            boardName: 'Test Board F2P',
             guild: '992115669774635078',
             member: 'mem' + i,
             genesis: getRndInteger(0, 30001),

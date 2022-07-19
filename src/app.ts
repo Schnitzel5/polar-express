@@ -23,23 +23,6 @@ const commandFiles = fs.readdirSync('./dist/commands').filter(file => file.endsW
 const guildID: string = '992115669774635078';
 const clientID = '996034025842036816';
 
-client.connect(err => {
-    const collection = client.db("test").collection("devices");
-    const boards = client.db('PolarExpressTM').collection("boards");
-    boards.find({}, {
-        projection: {
-            board: 'boardName'
-        }
-    }).toArray((err, data) => {
-        if (err) {
-            console.error("Leaderboard fetch failed: " + err.message);
-        }
-    });
-    // perform actions on the collection object
-    client.close();
-    console.log("MONGODB READY");
-});
-
 let count = 0;
 const rest = new REST({ version: '9' }).setToken(process.env.BOTTOKEN == undefined ? "" : process.env.BOTTOKEN);
 console.log('Started refreshing application (/) commands.');
@@ -89,6 +72,34 @@ bot.once('ready', () => {
 });
 
 bot.on('interactionCreate', async interaction => {
+    if (interaction.isAutocomplete()) {
+        if (interaction.commandName === 'setboard' || interaction.commandName === 'board') {
+            const focusedOption = interaction.options.getFocused(true);
+            if (focusedOption.name === 'board' || focusedOption.name === 'name') {
+                connectMongo(client, () => {
+                    const boards = client.db('PolarExpressTM').collection("boards");
+                    boards.find({}).project({ 'Board': 1 }).toArray(async (err, data) => {
+                        if (err) {
+                            console.error("Leaderboard fetch failed: " + err.message);
+                        }
+                        try {
+                            let choices: string[] = [];
+                            if (data != undefined) {
+                                choices = data.map(doc => doc.Board);
+                            }
+                            const filtered = choices.filter(choice => choice.startsWith(focusedOption.value));
+                            await interaction.respond(
+                                filtered.map(choice => ({ name: choice, value: choice })),
+                            );
+                        } catch (err) {
+                            console.error(`Error responding slash command: ${err}`);
+                        }
+                    });
+                });
+            }
+        }
+        return;
+    }
     if (!interaction.isCommand()) return;
 
     const command = commands.get(interaction.commandName);
@@ -96,7 +107,7 @@ bot.on('interactionCreate', async interaction => {
     if (!command) return;
 
     try {
-        await command.execute(interaction);
+        await command.execute(interaction, client);
     } catch (error) {
         console.error(error);
         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
@@ -112,3 +123,18 @@ app.get('/', (req, res) => {
 app.listen(parseInt(process.env.PORT == undefined ? '8080' : process.env.PORT) || 8080, '0.0.0.0', () => {
     console.log("API Server is running.");
 });
+
+export function connectMongo(client: MongoClient, callback: () => void) {
+    client = new MongoClient(uri, {
+        serverApi: ServerApiVersion.v1
+    });
+    client.connect((err) => {
+        if (err) {
+            console.error(`Connection failed: ${err.message}`);
+            return;
+        }
+        callback();
+    });
+}
+
+export const guildId: string = '992115669774635078';
