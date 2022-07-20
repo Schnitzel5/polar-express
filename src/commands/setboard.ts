@@ -17,15 +17,15 @@ export const data: Command = {
         let options: any = interaction.options;
         let boardName: string = options.getString('board');
         let member: GuildMember = options.getMember('member');
-        let genesis: number = options.getInteger('genesis');
-        let monthly: number = options.getInteger('monthly');
-        let primogems: number = options.getInteger('primogems');
-        let pity: number = options.getInteger('pity');
-        let guaranteed: number = options.getBoolean('guaranteed');
+        let genesis: number = options.getInteger('genesis') ?? 0;
+        let monthly: number = options.getInteger('monthly' ?? 0);
+        let primogems: number = options.getInteger('primogems') ?? 0;
+        let pity: number = options.getInteger('pity') ?? 0;
+        let guaranteed: number = options.getBoolean('guaranteed') ?? false;
         await interaction.reply('...');
         connectMongo(client, () => {
-            const boards = client.db('PolarExpressTM').collection("boards");
-            boards.insertOne({
+            const collection = client.db('PolarExpressTM').collection("boards");
+            collection.insertOne({
                 'Board': boardName,
                 'Guild': guildId,
                 'Member': member.id,

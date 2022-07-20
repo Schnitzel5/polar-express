@@ -34,8 +34,8 @@ export const data: Command = {
         embed.setDescription(boardName);
         embed.setThumbnail('https://cdn.discordapp.com/banners/992115669774635078/a_f3b461afc031173669ac827bcaa0edd0.webp?size=300');
         connectMongo(client, () => {
-            const boards = client.db('PolarExpressTM').collection("boards");
-            boards.find({ 'Board': boardName }).toArray(async (err, data) => {
+            const collection = client.db('PolarExpressTM').collection("boards");
+            collection.find({ 'Board': boardName }).toArray(async (err, data) => {
                 if (err) {
                     console.error("Leaderboard fetch failed: " + err.message);
                 }
@@ -43,7 +43,7 @@ export const data: Command = {
                     await interaction.editReply('Failed to fetch leaderboard data.');
                     return;
                 }
-                let boards: BoardData[] = data.map(doc => {
+                const boards: BoardData[] = data.map(doc => {
                     return {
                         boardName: doc.Board,
                         guild: doc.Guild,
@@ -54,6 +54,11 @@ export const data: Command = {
                         pity: doc.Pity,
                         guaranteed: doc.Guaranteed
                     };
+                });
+                boards.sort((a, b) => {
+                    let ba = calculateTotalPoints(a);
+                    let bb = calculateTotalPoints(b);
+                    return ba == bb ? 0 : ba < bb ? 1 : -1;
                 });
                 for (let board of boards) {
                     embed.addFields({ name: 'Name ' + board.member, value: 'Points ' + calculateTotalPoints(board), inline: false });
@@ -75,11 +80,11 @@ function generateRandomBoardData(): BoardData[] {
             boardName: 'Test Board F2P',
             guild: '992115669774635078',
             member: 'mem' + i,
-            genesis: getRndInteger(0, 30001),
-            monthly: getRndInteger(0, 180),
-            primo: getRndInteger(0, 300001),
-            pity: getRndInteger(0, 89),
-            guaranteed: getRndInteger(0, 2) == 1
+            genesis: getRandom(0, 30001),
+            monthly: getRandom(0, 180),
+            primo: getRandom(0, 300001),
+            pity: getRandom(0, 89),
+            guaranteed: getRandom(0, 2) == 1
         });
     }
     boardData.sort((a, b) => {
@@ -97,6 +102,6 @@ function calculateTotalPoints(board: BoardData): number {
     return totalRawGems + totalMonthly + totalPity;
 }
 
-function getRndInteger(min: number, max: number): number {
+export function getRandom(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min)) + min;
 }

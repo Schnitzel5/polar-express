@@ -85,7 +85,7 @@ bot.on('interactionCreate', async interaction => {
                         try {
                             let choices: string[] = [];
                             if (data != undefined) {
-                                choices = data.map(doc => doc.Board);
+                                choices = [...new Set<string>(data.map(doc => doc.Board))];
                             }
                             const filtered = choices.filter(choice => choice.startsWith(focusedOption.value));
                             await interaction.respond(
