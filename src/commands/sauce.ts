@@ -20,7 +20,7 @@ export const data: Command = {
         form.append('file', '(binary)');
         form.append('url', url);
         let embeds: EmbedBuilder[] = [];
-        await interaction.reply('...');
+        await interaction.deferReply();
         axios.post(sauceURL, form, { headers: form.getHeaders() })
             .then(async (res) => {
                 if (res.status == 200) {

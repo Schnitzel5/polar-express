@@ -22,7 +22,7 @@ export const data: Command = {
         let primogems: number = options.getInteger('primogems') ?? 0;
         let pity: number = options.getInteger('pity') ?? 0;
         let guaranteed: number = options.getBoolean('guaranteed') ?? false;
-        await interaction.reply('...');
+        await interaction.deferReply();
         connectMongo(client, () => {
             const collection = client.db('PolarExpressTM').collection("boards");
             collection.insertOne({
@@ -33,14 +33,14 @@ export const data: Command = {
                 'Monthly': monthly,
                 'Primogems': primogems,
                 'Pity': pity,
-                'Guaranteed': guaranteed
+                'Guaranteed': guaranteed,
+                'Added': new Date().toString()
             }, (err) => {
                 if (err) {
                     interaction.editReply('Failed to insert data! :(');
                     return;
                 }
                 interaction.editReply(`Data for leaderboard ${boardName} inserted! :)`);
-                client.close();
             });
         });
     },

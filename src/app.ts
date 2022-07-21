@@ -1,4 +1,4 @@
-import { Client, Collection, Intents } from 'discord.js';
+import { Client, Collection, GuildMember, Intents } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import * as fs from 'node:fs';
@@ -16,12 +16,13 @@ const uri = `mongodb+srv://${process.env.MONGOUSER}:${process.env.MONGOPW}@${pro
 const client = new MongoClient(uri, {
     serverApi: ServerApiVersion.v1
 });
-const bot = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const bot: Client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS] });
 const commands: Collection<string, Command> = new Collection;
 const commandsToPush: SlashCommandBuilder[] = [];
 const commandFiles = fs.readdirSync('./dist/commands').filter(file => file.endsWith('.js'));
 const guildID: string = '992115669774635078';
 const clientID = '996034025842036816';
+const members: GuildMember[] = [];
 
 let count = 0;
 const rest = new REST({ version: '9' }).setToken(process.env.BOTTOKEN == undefined ? "" : process.env.BOTTOKEN);
@@ -67,8 +68,14 @@ for (let file of commandFiles) {
     });
 }
 
-bot.once('ready', () => {
+bot.once('ready', async () => {
     console.log("BOT READY");
+    const guild = bot.guilds.cache.get('992115669774635078');
+    console.log(`Guild: ${guild}`);
+    await guild?.members?.fetch({ force: true }).then((val) => {
+        val.forEach(member => members.push(member));
+        console.log("Members fetched!");
+    }).catch(err => console.log(`Failed to fetch members: ${err}`));
 });
 
 bot.on('interactionCreate', async interaction => {
@@ -125,9 +132,9 @@ app.listen(parseInt(process.env.PORT == undefined ? '8080' : process.env.PORT) |
 });
 
 export function connectMongo(client: MongoClient, callback: () => void) {
-    client = new MongoClient(uri, {
+    /*client = new MongoClient(uri, {
         serverApi: ServerApiVersion.v1
-    });
+    });*/
     client.connect((err) => {
         if (err) {
             console.error(`Connection failed: ${err.message}`);
@@ -138,3 +145,5 @@ export function connectMongo(client: MongoClient, callback: () => void) {
 }
 
 export const guildId: string = '992115669774635078';
+export const discordClient: Client = bot;
+export const guildMembers: GuildMember[] = members;
