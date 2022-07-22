@@ -1,4 +1,4 @@
-import { Client, Collection, GuildMember, Intents } from 'discord.js';
+import { Client, Collection, GuildMember, Intents, MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import * as fs from 'node:fs';
@@ -7,6 +7,7 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { REST } from '@discordjs/rest';
 import { Command } from './commands/template';
 import express from 'express';
+import { Listener } from './reactions/template';
 
 let app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -16,9 +17,14 @@ const uri = `mongodb+srv://${process.env.MONGOUSER}:${process.env.MONGOPW}@${pro
 const client = new MongoClient(uri, {
     serverApi: ServerApiVersion.v1
 });
-const bot: Client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS] });
+const bot: Client = new Client({
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGE_REACTIONS],
+    partials: ['CHANNEL', 'MESSAGE', 'REACTION'],
+});
+const listeners: Collection<string, Listener> = new Collection;
 const commands: Collection<string, Command> = new Collection;
 const commandsToPush: SlashCommandBuilder[] = [];
+const listenerFiles = fs.readdirSync('./dist/reactions').filter(file => file.endsWith('.js'));
 const commandFiles = fs.readdirSync('./dist/commands').filter(file => file.endsWith('.js'));
 const guildID: string = '992115669774635078';
 const clientID = '996034025842036816';
@@ -30,7 +36,7 @@ console.log('Started refreshing application (/) commands.');
 for (let file of commandFiles) {
     count++;
     console.log("CMDs: " + commandsToPush.length + " Count: " + count);
-    if (file.includes("template.ts")) {
+    if (file.includes("template")) {
         continue;
     }
     const command = import(`./commands/${file}`);
@@ -66,6 +72,19 @@ for (let file of commandFiles) {
             })();
         }
     });
+}
+for (let file of listenerFiles) {
+    if (file.includes("template")) {
+        continue;
+    }
+    const listener = import(`./reactions/${file}`);
+    listener.then(val => {
+        if (val != undefined && val.data != undefined && val.data.triggerEmoji != undefined) {
+            console.log("CMD NAME: " + val.data.triggerEmoji);
+            listeners.set(val.data.triggerEmoji, val.data);
+        }
+    });
+    console.log("Listeners imported");
 }
 
 bot.once('ready', async () => {
@@ -118,6 +137,35 @@ bot.on('interactionCreate', async interaction => {
     } catch (error) {
         console.error(error);
         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    }
+});
+
+bot.on('messageReactionAdd', async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
+    if (reaction.partial) {
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.error('Something went wrong when fetching the message:', error);
+            return;
+        }
+    }
+
+    console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
+    //console.log(`Emoji ID ${reaction.emoji.id}`);
+    //console.log(`Emoji IDF ${reaction.emoji.identifier}`);
+    //console.log(`Emoji Name ${reaction.emoji.name}`);
+
+    let listener = listeners.get(reaction.emoji.id ?? '');
+
+    if (!listener && !(listener = listeners.get(reaction.emoji.name ?? ''))) {
+        return;
+    }
+
+    try {
+        await listener.execute(reaction, user);
+    } catch (error) {
+        console.error(error);
+        await reaction.message.channel.send({ content: 'There was an error during MTL!' });
     }
 });
 
