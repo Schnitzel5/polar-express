@@ -21,7 +21,7 @@ export const data: Listener = {
                 const sourceDetected: string = res.data.translations[0].detected_source_language;
                 const result: string = res.data.translations[0].text;
                 console.log("MTL SourceLang: " + sourceDetected);
-                console.log("MTL Result: \n" + text);
+                console.log("MTL Result: \n" + result);
                 await reaction.message.channel.send(result);
             } else {
                 await reaction.message.channel.send('DeepL MTL failed!');
