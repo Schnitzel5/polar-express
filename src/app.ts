@@ -151,9 +151,8 @@ bot.on('messageReactionAdd', async (reaction: MessageReaction | PartialMessageRe
     }
 
     console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
-    //console.log(`Emoji ID ${reaction.emoji.id}`);
-    //console.log(`Emoji IDF ${reaction.emoji.identifier}`);
-    //console.log(`Emoji Name ${reaction.emoji.name}`);
+    console.log(`Emoji ID ${reaction.emoji.id}`);
+    console.log(`Emoji Name ${reaction.emoji.name}`);
 
     let listener = listeners.get(reaction.emoji.id ?? '');
 
