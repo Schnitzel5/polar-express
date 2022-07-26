@@ -1,7 +1,7 @@
 import axios from "axios";
 import { MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
 import { MongoClient } from "mongodb";
-import { connectMongo } from "src/app";
+import { connectMongo } from "../app";
 import { URLSearchParams } from "url";
 
 export interface Listener {
