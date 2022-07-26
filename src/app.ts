@@ -145,7 +145,15 @@ bot.on('messageReactionAdd', async (reaction: MessageReaction | PartialMessageRe
         try {
             await reaction.fetch();
         } catch (error) {
-            console.error('Something went wrong when fetching the message:', error);
+            console.error('Error while fetching the message: ', error);
+            return;
+        }
+    }
+    if (user.partial) {
+        try {
+            await user.fetch();
+        } catch (error) {
+            console.error('Error while fetching user: ' + error);
             return;
         }
     }
@@ -161,7 +169,7 @@ bot.on('messageReactionAdd', async (reaction: MessageReaction | PartialMessageRe
     }
 
     try {
-        await listener.execute(reaction, user);
+        await listener.execute(reaction, user, client);
     } catch (error) {
         console.error(error);
         await reaction.message.channel.send({ content: 'There was an error during MTL!' });
