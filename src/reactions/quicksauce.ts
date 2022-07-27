@@ -1,33 +1,28 @@
 import { EmbedBuilder } from "@discordjs/builders";
-import { BaseCommandInteraction, CacheType } from "discord.js";
-import build, { Command } from "./template";
-import * as cheerio from 'cheerio';
 import axios from "axios";
-import FormData from 'form-data';
+import { MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
+import FormData from "form-data";
 import { MongoClient } from "mongodb";
+import { Listener } from "./template";
+import * as cheerio from "cheerio";
+import { urlRegex } from "../commands/sauce";
 
-export const urlRegex: RegExp = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
-
-export const data: Command = {
-    command: build('sauce', 'Give sauce!', [
-        { name: 'url', description: 'URL of the desired image', type: "String", required: true, autoComplete: false }
-    ]),
-    execute: async (interaction: BaseCommandInteraction<CacheType>, client: MongoClient) => {
+export const data: Listener = {
+    triggerEmoji: '🌶️',
+    execute: async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser, client: MongoClient) => {
         const sauceURL: string = 'https://saucenao.com/search.php';
-        let options: any = interaction.options;
-        let url: string = options.getString('url');
+        let url: string = reaction.message.attachments.first()?.url ?? '';
         let form: FormData = new FormData();
         form.append('file', '(binary)');
         form.append('url', url);
         let embeds: EmbedBuilder[] = [];
-        await interaction.deferReply();
         axios.post(sauceURL, form, { headers: form.getHeaders() })
             .then(async (res) => {
                 if (res.status == 200) {
                     const $ = cheerio.load(res.data);
                     let count = 0;
                     $('.resulttable').each((index, element) => {
-                        if (count >= 3) {
+                        if (count >= 1) {
                             return;
                         }
                         let embed: EmbedBuilder = new EmbedBuilder();
@@ -77,9 +72,9 @@ export const data: Command = {
                         count++;
                     });
                 }
-                await interaction.editReply({ embeds: embeds.map(e => e.toJSON()) });
+                await reaction.message.channel.send({ embeds: embeds.map(e => e.toJSON()) });
             }).catch((err) => {
                 console.error(err);
             });
     }
-}
+};
