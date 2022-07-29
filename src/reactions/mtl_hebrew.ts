@@ -1,36 +1,44 @@
 import axios from "axios";
 import { MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
-import FormData from "form-data";
 import { MongoClient } from "mongodb";
+import { URLSearchParams } from "url";
+import { connectMongo } from "../app";
 import { Listener } from "./template";
 
 export const data: Listener = {
     triggerEmoji: '🇮🇱',
     execute: async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser, client: MongoClient) => {
-        const text: string = reaction.message.cleanContent ?? '';
-        let preForm: FormData = new FormData();
-        preForm.append('text_to_translate', text);
-        const autoDetectURL: string = `https://www.translate.com/translator/ajax_lang_auto_detect`;
-        axios.post(autoDetectURL, preForm, { headers: preForm.getHeaders() }).then(async (res) => {
+        const text: string = reaction.message.content ?? '';
+        let form: URLSearchParams = new URLSearchParams();
+        form.append('', text);
+        const mtlURL: string = `https://duckduckgo.com/translation.js?vqd=3-306826030276211037926720422115307361214-305698686304503493873277097345061330313&query=translate to hebrew&to=he`;
+        axios.post(mtlURL, form).then(async (res) => {
             if (res.status == 200) {
-                const lang: string = res.data.language;
-                const mtlURL: string = `https://www.translate.com/translator/translate_mt`;
-                let form: FormData = new FormData();
-                form.append('text_to_translate', text);
-                form.append('source_lang', lang);
-                form.append('translated_lang', 'iw');
-                form.append('use_cache_only', 'false');
-                axios.post(mtlURL, form, { headers: form.getHeaders() }).then(async (res) => {
-                    if (res.status == 200) {
-                        const result: string = res.data.translated_text;
-                        await reaction.message.channel.send(result);
-                    } else {
-                        await reaction.message.channel.send('MTL process failed!');
-                    }
-                }).catch(console.log);
+                const sourceDetected: string = res.data.detected_language;
+                const result: string = res.data.translated;
+                console.log("MTL SourceLang: " + sourceDetected + " TargetLang: Hebrew");
+                console.log("MTL Result: \n" + result);
+                await reaction.message.channel.send(result);
             } else {
-                await reaction.message.channel.send('Auto detection failed!');
+                await reaction.message.channel.send('DeepL MTL failed!');
             }
-        }).catch(console.log);
+        }).catch(async err => {
+            console.error(err);
+            await reaction.message.channel.send('MTL request failed!');
+        });
+        connectMongo(client, () => {
+            const collection = client.db('PolarExpressTM').collection("logsReactions");
+            collection.insertOne({
+                'ReactionDate': new Date().toString(),
+                'ReactionID': reaction.emoji.id,
+                'ReactionName': reaction.emoji.name,
+                'ReactorTag': user.tag,
+                'ReactorUsername': user.username
+            }, (err) => {
+                if (err) {
+                    console.error("Log reaction failed: " + err.message);
+                }
+            });
+        });
     }
 };
